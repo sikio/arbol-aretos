@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Árbol Genealógico — Familia Aretos</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf8f3;
+  --parchment: #f0ead8;
+  --gold: #b8964a;
+  --gold-light: #d4ae6a;
+  --dark: #2c2416;
+  --medium: #5a4a2e;
+  --olive: #3d6b3a;
+  --rose: #a05060;
+  --blue-gray: #4a6070;
+  --orange: #c4803a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Lato', sans-serif; background: var(--cream); color: var(--dark); min-height: 100vh; }
+
+/* HEADER */
+header {
+  background: var(--dark); color: var(--cream);
+  padding: 14px 22px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+}
+header h1 { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; color: var(--gold-light); }
+header p { font-size: 10px; color: #a09070; margin-top: 2px; }
+.hbtns { display: flex; gap: 8px; }
+.btn { padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; font-family: 'Lato', sans-serif; font-size: 11px; font-weight: 700; transition: all .2s; }
+.btn-gold { background: var(--gold); color: white; }
+.btn-gold:hover { background: var(--gold-light); }
+.btn-outline { background: transparent; color: var(--gold-light); border: 1.5px solid var(--gold); }
+.btn-outline:hover { background: var(--gold); color: white; }
+
+/* CANVAS */
+#canvas { padding: 20px 16px 100px; overflow-x: auto; }
+
+/* GENERATION */
+.gen-title {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--gold);
+  text-align: center; margin: 20px 0 10px;
+}
+.gen-title::before, .gen-title::after { content: ' ── '; opacity: .5; }
+
+.family-row {
+  display: flex; flex-direction: row;
+  justify-content: center; align-items: flex-start;
+  flex-wrap: wrap; gap: 18px; width: 100%;
+}
+
+/* FAMILY UNIT */
+.family-unit { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+
+.couple { display: flex; flex-direction: row; align-items: flex-start; gap: 4px; }
+
+.plus-sign {
+  font-size: 20px; color: var(--rose); font-weight: 300;
+  padding-top: 14px; line-height: 1; flex-shrink: 0;
+}
+
+/* CARD */
+.card {
+  width: 145px; background: white;
+  border-radius: 9px; padding: 8px 10px;
+  border: 1.5px solid #ddd4bb;
+  box-shadow: 0 2px 8px rgba(44,36,22,.1);
+  cursor: pointer; transition: all .18s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 5px 16px rgba(44,36,22,.18); border-color: var(--gold); }
+.card.direct   { background: #f0f7ee; border-color: var(--olive); border-width: 2px; }
+.card.spouse   { background: #fdf5f7; border-color: var(--rose); }
+.card.intestado{ background: #fdf8f0; border-color: var(--orange); border-width: 2px; }
+.card.unknown  { background: #f8f8f8; border-color: #ccc; border-style: dashed; }
+.card.other    { background: #f4f6f8; border-color: #90a4ae; }
+.card.you      { background: #eef2f8; border-color: var(--blue-gray); border-width: 2.5px; }
+
+.card-badge { display: inline-block; font-size: 8px; padding: 1px 5px; border-radius: 8px; font-weight: 700; margin-bottom: 3px; }
+.bd { background: var(--olive); color: white; }
+.bi { background: var(--orange); color: white; }
+.by { background: var(--blue-gray); color: white; }
+
+.card-name { font-family: 'Cormorant Garamond', serif; font-size: 12px; font-weight: 600; color: var(--dark); line-height: 1.3; }
+.card-gr { font-size: 9px; color: var(--medium); font-style: italic; line-height: 1.3; margin-top: 1px; }
+.card-info { font-size: 8.5px; color: #888; line-height: 1.4; margin-top: 3px; border-top: 1px solid #eee; padding-top: 3px; }
+
+/* ADD BUTTONS */
+.add-row { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.abtn {
+  font-size: 9.5px; padding: 3px 8px; border-radius: 4px;
+  border: 1px solid; background: transparent;
+  cursor: pointer; font-family: 'Lato', sans-serif;
+  font-weight: 700; transition: all .15s; white-space: nowrap;
+}
+.abtn-s { border-color: var(--rose); color: var(--rose); }
+.abtn-s:hover { background: var(--rose); color: white; }
+.abtn-c { border-color: var(--olive); color: var(--olive); }
+.abtn-c:hover { background: var(--olive); color: white; }
+.abtn-e { border-color: var(--gold); color: var(--gold); }
+.abtn-e:hover { background: var(--gold); color: white; }
+
+/* CONNECTOR */
+.vconn { display: flex; justify-content: center; margin: 4px 0; }
+
+/* MODAL */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(44,36,22,.65);
+  z-index: 1000; display: flex;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal {
+  background: white; border-radius: 14px;
+  padding: 26px 28px; width: 400px; max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35); position: relative;
+}
+.modal h2 { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--dark); margin-bottom: 14px; border-bottom: 1px solid var(--parchment); padding-bottom: 8px; }
+.modal label { display: block; font-size: 10px; font-weight: 700; color: var(--medium); letter-spacing: .06em; text-transform: uppercase; margin: 9px 0 3px; }
+.modal input { width: 100%; padding: 8px 10px; border: 1.5px solid #ddd; border-radius: 7px; font-family: 'Lato', sans-serif; font-size: 13px; color: var(--dark); background: var(--cream); transition: border .15s; }
+.modal input:focus { outline: none; border-color: var(--gold); }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.btn-cancel { padding: 8px 16px; border-radius: 7px; border: 1.5px solid #ddd; background: white; cursor: pointer; font-family: 'Lato', sans-serif; font-size: 12px; color: #888; }
+.btn-cancel:hover { border-color: #aaa; }
+.btn-save { padding: 8px 20px; border-radius: 7px; border: none; background: var(--gold); color: white; cursor: pointer; font-family: 'Lato', sans-serif; font-size: 12px; font-weight: 700; }
+.btn-save:hover { background: var(--gold-light); }
+.btn-del { padding: 8px 14px; border-radius: 7px; border: 1.5px solid #e55; background: white; cursor: pointer; font-family: 'Lato', sans-serif; font-size: 12px; color: #e55; margin-right: auto; }
+.btn-del:hover { background: #fff0f0; }
+.close-x { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 22px; color: #aaa; cursor: pointer; }
+.close-x:hover { color: var(--dark); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--dark); color: var(--cream); padding: 9px 20px; border-radius: 8px; font-size: 12px; z-index: 2000; transition: transform .3s; pointer-events: none; border-left: 3px solid var(--gold); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* LEGEND */
+.legend { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; padding: 8px 16px; background: var(--parchment); border-top: 1px solid #ddd4bb; font-size: 9px; color: var(--medium); z-index: 50; }
+.li { display: flex; align-items: center; gap: 4px; }
+.ld { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Familia Aretos · Αρέτος</h1>
+    <p>Andros, Grecia → Culiacán, Sinaloa, México · Árbol genealógico interactivo</p>
+  </div>
+  <div class="hbtns">
+    <button class="btn btn-outline" onclick="exportData()">Exportar JSON</button>
+    <button class="btn btn-gold" onclick="save()">Guardar</button>
+  </div>
+</header>
+
+<div id="canvas"></div>
+
+<div class="legend">
+  <div class="li"><div class="ld" style="background:#3d6b3a;"></div>Línea directa ★</div>
+  <div class="li"><div class="ld" style="background:#a05060;"></div>Cónyuge</div>
+  <div class="li"><div class="ld" style="background:#c4803a;"></div>Intestado ⚖️</div>
+  <div class="li"><div class="ld" style="background:#ccc;border:1px dashed #999;"></div>Desconocido</div>
+  <div class="li"><div class="ld" style="background:#90a4ae;"></div>Otros familiares</div>
+  <div class="li"><div class="ld" style="background:#4a6070;"></div>Tú</div>
+  <div class="li">· Clic en tarjeta = editar · Botones + para agregar personas</div>
+</div>
+
+<div class="overlay" id="overlay" style="display:none">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal()">×</button>
+    <h2 id="modal-title">Persona</h2>
+    <label>Nombre *</label><input id="f-es" placeholder="Ej: María Aretos García">
+    <label>Nombre en griego (opcional)</label><input id="f-gr" placeholder="Ej: Μαρία Αρέτος">
+    <label>Fecha / año de nacimiento</label><input id="f-birth" placeholder="Ej: 12 Mar 1955">
+    <label>Lugar de nacimiento</label><input id="f-place" placeholder="Ej: Culiacán, Sinaloa">
+    <label>Fallecimiento (si aplica)</label><input id="f-death" placeholder="Ej: 2015 · Culiacán">
+    <label>Notas</label><input id="f-notes" placeholder="Ej: Agricultor, vivió en...">
+    <div class="modal-btns">
+      <button class="btn-del" id="btn-del" onclick="deleteCurrent()" style="display:none">Eliminar</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════
+// DATOS DE LA FAMILIA ARETOS
+// ═══════════════════════════════════
+// Estructura: cada generación es un array de "unidades familiares"
+// Cada unidad: { id, person, spouse, childrenIds[] }
+// Los hijos se buscan por id en el siguiente nivel
+
+const DEFAULT = {
+  // GEN 1
+  g1: [
+    { id:'g1-1', person:{id:'miguel',es:'Miguel Juan Aretos',gr:'Μιχαήλ Ιωάννης Αρέτος',birth:'Andros, Grecia',place:'Andros, Grecia',death:'',notes:'Bisabuelo fundador de la familia',type:'direct'}, spouse:{id:'margatina',es:'Margatina E. Psaltu',gr:'Μαργαρίτα Ε. Ψάλτου',birth:'Andros, Grecia',place:'Andros',death:'',notes:'',type:'spouse'}, childrenIds:['g2-1','g2-2','g2-3','g2-4','g2-5','g2-6'] }
+  ],
+  // GEN 2
+  g2: [
+    { id:'g2-1', person:{id:'leonida',es:'Leonida M. Aretos ★',gr:'Λεωνίδας Μ. Αρέτος',birth:'n. 1860 · Andros',place:'Andros, Grecia',death:'vivo 1926',notes:'Padre de Estelios. Hijo mayor.',type:'direct'}, spouse:{id:'sp-leonida',es:'? Psillos (desconocida)',gr:'? Ψίλλος',birth:'',place:'',death:'',notes:'Apellido inferido del segundo apellido de Estelios',type:'unknown'}, childrenIds:['g3-1'] },
+    { id:'g2-2', person:{id:'juan-m',es:'Juan M. Aretos ⚖️',gr:'Ιωάννης Μ. Αρέτος',birth:'n. 1862 · Andros',place:'Andros, Grecia',death:'†Nov 1923 · Sinaloa',notes:'Intestado. Razón de los documentos griegos 1926.',type:'intestado'}, spouse:{id:'marcella',es:'Marcella J. Aretos',gr:'Μαρσέλα Ι. Αρέτου',birth:'',place:'',death:'',notes:'Heredera ab intestato',type:'spouse'}, childrenIds:[] },
+    { id:'g2-3', person:{id:'jorge-m',es:'Jorge M. Aretos',gr:'Γεώργιος Μ. Αρέτος',birth:'n. 1864 · Andros',place:'Andros, Grecia',death:'vivo 1926',notes:'',type:'other'}, spouse:null, childrenIds:[] },
+    { id:'g2-4', person:{id:'temistocles',es:'Temistocles M. Aretos',gr:'Θεμιστοκλής Μ. Αρέτος',birth:'n. 1869 · Andros',place:'Andros, Grecia',death:'†',notes:'',type:'other'}, spouse:{id:'irene',es:'Irene Panaioti Buscudaki',gr:'Ειρήνη Παναϊώτη Μπουσκουδάκη',birth:'',place:'Andros',death:'',notes:'Casados 12 Oct 1887 · Theoskepastos',type:'spouse'}, childrenIds:['g3-2'] },
+    { id:'g2-5', person:{id:'anesio',es:'Anesio M. Aretos',gr:'Ανέσιο Μ. Αρέτου',birth:'n. 1869 · Andros',place:'Andros, Grecia',death:'†',notes:'',type:'other'}, spouse:{id:'eustatio',es:'Eustatio S. Spanudis',gr:'Ευστάθιος Σ. Σπανούδης',birth:'',place:'Andros',death:'',notes:'Casados 20 Feb 1886 · Theoskepastos',type:'spouse'}, childrenIds:['g3-3'] },
+    { id:'g2-6', person:{id:'constantino',es:'Constantino M. Aretos',gr:'Κωνσταντίνος Μ. Αρέτος',birth:'n. 1870 · Andros',place:'Andros, Grecia',death:'vivo 1926',notes:'Firmó documentos en Atenas 1924-1925.',type:'other'}, spouse:null, childrenIds:[] }
+  ],
+  // GEN 3
+  g3: [
+    { id:'g3-1', person:{id:'estelios',es:'Estelios Aretos Psillos ★',gr:'Εστέλιος Αρέτος Ψίλλος',birth:'n. 23 Nov 1900 · Chios, Grecia',place:'Chios (Χίος), Grecia',death:'',notes:'Bisabuelo. Llegó México 5 Ene 1924 por Tampico. Pasaporte No.314.',type:'direct'}, spouse:{id:'lorenza',es:'Lorenza Barrera Gastélum',gr:'Λορένσα Μπαρέρα Γαστέλουμ',birth:'n. 10 Ago 1912 · Sinaloa',place:'Sinaloa, México',death:'',notes:'Tarjeta migratoria No.81417 (1933).',type:'spouse'}, childrenIds:['g4-1','g4-2','g4-3','g4-4'] },
+    { id:'g3-2', person:{id:'miguel-t',es:'Miguel T. Aretos',gr:'Μιχαήλ Θ. Αρέτος',birth:'n. 1890 · Chios',place:'Chios, Grecia',death:'vivo 1926',notes:'Sobrino del intestado. Heredero.',type:'other'}, spouse:null, childrenIds:[] },
+    { id:'g3-3', person:{id:'margaro',es:'Margaro Spanudis',gr:'Μαργαρώ Σπανούδη',birth:'n. 1886',place:'Andros, Grecia',death:'†1918',notes:'Hija de Anesio. Heredera.',type:'other'}, spouse:{id:'basilio',es:'Basilio C. Bulgari',gr:'Βασίλειος Κ. Βούλγαρης',birth:'',place:'Andros',death:'',notes:'Casados 20 Feb 1910 · Theoskepastos',type:'spouse'}, childrenIds:['g4-5','g4-6','g4-7'] }
+  ],
+  // GEN 4
+  g4: [
+    { id:'g4-1', person:{id:'leonides',es:'Leonides Aretos',gr:'Λεωνίδης Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'',type:'direct'}, spouse:null, childrenIds:[] },
+    { id:'g4-2', person:{id:'estelios-h',es:'Estelios Aretos (hijo)',gr:'Εστέλιος Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'',type:'direct'}, spouse:null, childrenIds:[] },
+    { id:'g4-3', person:{id:'jorge-ab',es:'Jorge Aretos ★ ABUELO',gr:'Γεώργιος Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'Abuelo',type:'direct'}, spouse:{id:'lucila',es:'Lucila Hernandez de Aretos',gr:'Λουσίλα Ερνάντες δε Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'Abuela',type:'spouse'}, childrenIds:['g5-1','g5-2','g5-3'] },
+    { id:'g4-4', person:{id:'juan-h',es:'Juan Aretos (hijo)',gr:'Ιωάννης Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'',type:'direct'}, spouse:null, childrenIds:[] },
+    { id:'g4-5', person:{id:'leonida-b',es:'Leonida B. Bulgari',gr:'Λεωνίδας Βούλγαρης',birth:'n. 1912',place:'Andros',death:'',notes:'Heredero de Juan M.',type:'other'}, spouse:null, childrenIds:[] },
+    { id:'g4-6', person:{id:'juan-b',es:'Juan B. Bulgari',gr:'Ιωάννης Βούλγαρης',birth:'n. 1916',place:'Andros',death:'',notes:'Heredero de Juan M.',type:'other'}, spouse:null, childrenIds:[] },
+    { id:'g4-7', person:{id:'miguel-b',es:'Miguel B. Bulgari',gr:'Μιχαήλ Βούλγαρης',birth:'n. 1918',place:'Andros',death:'',notes:'Heredero de Juan M.',type:'other'}, spouse:null, childrenIds:[] }
+  ],
+  // GEN 5
+  g5: [
+    { id:'g5-1', person:{id:'claudia',es:'Claudia Aretos ★',gr:'Κλαυδία Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'Tu mamá',type:'direct'}, spouse:null, childrenIds:['g6-1'] },
+    { id:'g5-2', person:{id:'ana',es:'Ana Patricia Aretos',gr:'Άνα Πατρίσια Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'',type:'direct'}, spouse:null, childrenIds:[] },
+    { id:'g5-3', person:{id:'esthelia',es:'Esthelia Alejandra Aretos',gr:'Εσθήλια Αλεχάνδρα Αρέτος',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'',type:'direct'}, spouse:null, childrenIds:[] }
+  ],
+  // GEN 6
+  g6: [
+    { id:'g6-1', person:{id:'tu',es:'Tú ★',gr:'Εσύ ★',birth:'Culiacán, Sinaloa',place:'Culiacán, Sin.',death:'',notes:'Quien investiga el árbol',type:'you'}, spouse:null, childrenIds:[] }
+  ],
+  // Generaciones siguientes (dinámico)
+  gx: []
+};
+
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+let D = loadData();
+let _cb = null;
+let _editTarget = null; // { unitId, key } key = 'person' | 'spouse'
+
+function loadData() {
+  try { const s=localStorage.getItem('aretos-v3'); if(s) return JSON.parse(s); } catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+function save() { localStorage.setItem('aretos-v3', JSON.stringify(D)); showToast('Guardado en este navegador ✓'); }
+function exportData() {
+  const b=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(b); const a=document.createElement('a');
+  a.href=u; a.download='arbol-aretos.json'; a.click();
+  showToast('Datos exportados ✓');
+}
+function uid() { return 'x'+Math.random().toString(36).slice(2,8); }
+
+// ═══════════════════════════════════
+// FIND
+// ═══════════════════════════════════
+function allGens() { return [D.g1,D.g2,D.g3,D.g4,D.g5,D.g6,D.gx]; }
+
+function findUnit(unitId) {
+  for (const gen of allGens()) {
+    const u = gen.find(u => u.id === unitId);
+    if (u) return u;
+  }
+  return null;
+}
+
+function findUnitByPersonId(personId) {
+  for (const gen of allGens()) {
+    for (const u of gen) {
+      if (u.person.id === personId) return { u, key:'person' };
+      if (u.spouse && u.spouse.id === personId) return { u, key:'spouse' };
+    }
+  }
+  return null;
+}
+
+function getGenIndex(unitId) {
+  const gens = [D.g1,D.g2,D.g3,D.g4,D.g5,D.g6,D.gx];
+  return gens.findIndex(g => g.some(u => u.id === unitId));
+}
+
+function nextGen(genIdx) {
+  const gens = [D.g1,D.g2,D.g3,D.g4,D.g5,D.g6,D.gx];
+  if (genIdx >= gens.length - 1) return D.gx;
+  return gens[genIdx + 1];
+}
+
+// ═══════════════════════════════════
+// MODAL
+// ═══════════════════════════════════
+function openModal(title, p, showDel, cb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('f-es').value    = p.es    || '';
+  document.getElementById('f-gr').value    = p.gr    || '';
+  document.getElementById('f-birth').value = p.birth || '';
+  document.getElementById('f-place').value = p.place || '';
+  document.getElementById('f-death').value = p.death || '';
+  document.getElementById('f-notes').value = p.notes || '';
+  document.getElementById('btn-del').style.display = showDel ? 'block' : 'none';
+  document.getElementById('overlay').style.display = 'flex';
+  _cb = cb;
+  setTimeout(() => document.getElementById('f-es').focus(), 80);
+}
+function closeModal() { document.getElementById('overlay').style.display='none'; _cb=null; _editTarget=null; }
+function saveModal() {
+  const v = {
+    es:    document.getElementById('f-es').value.trim(),
+    gr:    document.getElementById('f-gr').value.trim(),
+    birth: document.getElementById('f-birth').value.trim(),
+    place: document.getElementById('f-place').value.trim(),
+    death: document.getElementById('f-death').value.trim(),
+    notes: document.getElementById('f-notes').value.trim(),
+  };
+  if (!v.es) { alert('El nombre es obligatorio'); return; }
+  if (_cb) _cb(v);
+  closeModal(); render(); save();
+}
+function deleteCurrent() {
+  if (!_editTarget) return;
+  const { u, key } = _editTarget;
+  if (key === 'spouse') {
+    if (!confirm('¿Eliminar este cónyuge?')) return;
+    u.spouse = null;
+    closeModal(); render(); save(); showToast('Cónyuge eliminado');
+  }
+}
+document.getElementById('overlay').addEventListener('click', e => { if(e.target.id==='overlay') closeModal(); });
+
+// ═══════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════
+function onClickCard(personId) {
+  const found = findUnitByPersonId(personId);
+  if (!found) return;
+  const { u, key } = found;
+  const p = u[key];
+  const canDel = key === 'spouse' && p.id !== 'margatina';
+  _editTarget = found;
+  openModal('Editar: ' + (p.es||'?'), p, canDel, v => {
+    Object.assign(p, v);
+    showToast('Actualizado ✓');
+  });
+}
+
+function onAddSpouse(unitId) {
+  const u = findUnit(unitId);
+  if (!u) return;
+  if (u.spouse) { showToast('Ya tiene cónyuge. Haz clic en su tarjeta para editarlo.'); return; }
+  openModal('Agregar esposo/a', {}, false, v => {
+    u.spouse = { id: uid(), ...v, type: 'spouse' };
+    showToast('Cónyuge agregado ✓');
+  });
+}
+
+function onAddChild(unitId) {
+  const u = findUnit(unitId);
+  if (!u) return;
+  const gIdx = getGenIndex(unitId);
+  const target = nextGen(gIdx);
+  openModal('Agregar hijo/a de ' + u.person.es, {}, false, v => {
+    const newId = uid();
+    const newUnitId = 'u-' + newId;
+    const newUnit = { id: newUnitId, person: { id: newId, ...v, type: 'direct' }, spouse: null, childrenIds: [] };
+    target.push(newUnit);
+    if (!u.childrenIds) u.childrenIds = [];
+    u.childrenIds.push(newUnitId);
+    showToast('Hijo/a agregado ✓');
+  });
+}
+
+// ═══════════════════════════════════
+// RENDER
+// ═══════════════════════════════════
+function render() {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+
+  const genData = [
+    { label: 'Generación 1 · Bisabuelos griegos · Andros, Grecia', units: D.g1 },
+    { label: 'Generación 2 · Los 6 hijos y sus cónyuges · Andros, Grecia · Iglesia Θεοσκέπαστος', units: D.g2 },
+    { label: 'Generación 3 · Hijos de la Generación 2', units: D.g3 },
+    { label: 'Generación 4 · Hijos de la Generación 3 · Culiacán, Sinaloa', units: D.g4 },
+    { label: 'Generación 5 · Hijos de la Generación 4 · Culiacán, Sinaloa', units: D.g5 },
+    { label: 'Generación 6 · Hijos de la Generación 5 · Culiacán, Sinaloa', units: D.g6 },
+    { label: 'Generaciones siguientes', units: D.gx },
+  ];
+
+  genData.forEach(({ label, units }, i) => {
+    if (units.length === 0) return;
+
+    if (i > 0) canvas.appendChild(mkVConn());
+
+    const title = document.createElement('p');
+    title.className = 'gen-title';
+    title.textContent = label;
+    canvas.appendChild(title);
+
+    const row = document.createElement('div');
+    row.className = 'family-row';
+    units.forEach(u => row.appendChild(mkUnit(u)));
+    canvas.appendChild(row);
+  });
+}
+
+function mkVConn() {
+  const d = document.createElement('div');
+  d.className = 'vconn';
+  d.innerHTML = `<svg width="2" height="30"><line x1="1" y1="0" x2="1" y2="30" stroke="#b8964a" stroke-width="2"/></svg>`;
+  return d;
+}
+
+function mkUnit(u) {
+  const wrap = document.createElement('div');
+  wrap.className = 'family-unit';
+
+  // Couple
+  const couple = document.createElement('div');
+  couple.className = 'couple';
+  couple.appendChild(mkCard(u.person));
+  if (u.spouse) {
+    const plus = document.createElement('span');
+    plus.className = 'plus-sign'; plus.textContent = '+';
+    couple.appendChild(plus);
+    couple.appendChild(mkCard(u.spouse));
+  }
+  wrap.appendChild(couple);
+
+  // Buttons
+  const btns = document.createElement('div');
+  btns.className = 'add-row';
+
+  // Edit main person
+  const eBtn = document.createElement('button');
+  eBtn.className = 'abtn abtn-e'; eBtn.textContent = '✏ Editar';
+  eBtn.onclick = () => onClickCard(u.person.id);
+  btns.appendChild(eBtn);
+
+  // Add spouse
+  if (!u.spouse) {
+    const sBtn = document.createElement('button');
+    sBtn.className = 'abtn abtn-s'; sBtn.textContent = '+ Cónyuge';
+    sBtn.onclick = () => onAddSpouse(u.id);
+    btns.appendChild(sBtn);
+  }
+
+  // Add child
+  const cBtn = document.createElement('button');
+  cBtn.className = 'abtn abtn-c'; cBtn.textContent = '+ Hijo/a';
+  cBtn.onclick = () => onAddChild(u.id);
+  btns.appendChild(cBtn);
+
+  wrap.appendChild(btns);
+  return wrap;
+}
+
+function mkCard(p) {
+  const card = document.createElement('div');
+  card.className = `card ${p.type || 'other'}`;
+  card.title = 'Clic para editar';
+
+  let badge = '';
+  if (p.type==='direct')    badge = `<span class="card-badge bd">Línea directa ★</span><br>`;
+  if (p.type==='intestado') badge = `<span class="card-badge bi">Intestado ⚖️</span><br>`;
+  if (p.type==='you')       badge = `<span class="card-badge by">Tú ★</span><br>`;
+
+  const parts = [p.birth, p.death?'†'+p.death:'', p.notes].filter(Boolean);
+  const info = parts.join(' · ');
+
+  card.innerHTML = `${badge}
+    <div class="card-name">${p.es||'?'}</div>
+    ${p.gr?`<div class="card-gr">${p.gr}</div>`:''}
+    ${info?`<div class="card-info">${info}</div>`:''}`;
+
+  card.onclick = () => onClickCard(p.id);
+  return card;
+}
+
+// ═══════════════════════════════════
+// TOAST
+// ═══════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+render();
+setInterval(save, 60000);
+</script>
+</body>
+</html>
